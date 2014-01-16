@@ -1,0 +1,80 @@
+#!/bin/bash
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2014 Thomas Nilsson
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# !git log --merge -p $merged"  -c   doesn't work during a rebase
+
+# BASE
+# LOCAL
+# REMOTE
+# MERGED
+
+ca=$1
+lh=$2
+rh=$3
+merged=$4
+
+cat "$lh" > "$merged"
+{
+	echo '# LOCAL DIFF'
+	diff -u "$ca" "$lh"
+} > "$lh.diff"
+{
+	echo '# REMOTE DIFF'
+	diff -u "$ca" "$rh"
+} > "$rh.diff"
+
+diff -u "$ca" "$rh" | \
+	patch --force --fuzz=0 --reject-format=unified "$merged" 1>/dev/null
+
+if (($(wc -l < "$merged.rej")0 < $(wc -l < "$lh.diff")0)); then
+	vim -c "vsplit   | e $merged" \
+	    -c "wincmd w | split | e $merged.rej | f Chunks\ left\ to\ merge | set buftype=nofile | set filetype=diff" \
+	    -c "wincmd w | split | e $lh.diff    | f Changes\ that\ caused\ conflict | set buftype=nofile | set filetype=diff" \
+	    -c "wincmd w | set buftype=nofile | r !git log --merge -p $merged"  -c "f 'git log --merge -p $merged'" \
+	    -c "set filetype=git | 0" \
+	    -c "wincmd t"
+else
+	cat "$lh" > "$merged"
+	patch -R --force --fuzz=0 --reject-format=unified "$merged" 1>/dev/null < "$lh.diff"
+	diff -u "$ca" "$rh" | \
+		patch --force --fuzz=0 --reject-format=unified "$merged" 1>/dev/null
+	vim -c "vsplit"              -c "e $merged" \
+	    -c "wincmd w"            -c "e $lh.diff" \
+	    -c "set filetype=diff" \
+	    -c "wincmd t"
+fi
+
+rm -f "$lh.diff"
+rm -f "$rh.diff"
+rm -f "$merged.rej"
+
+while :; do
+	read -ep "Was the merge successful? [y/n] "
+	if [[ $REPLY == y ]]; then
+		exit 0
+	else
+		cp "$merged" "$merged.work_in_progress"
+		exit 1
+	fi
+done
