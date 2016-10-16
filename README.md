@@ -7,5 +7,4 @@ working with .rej files and that's what prompted this small script.
 
 License
 -------
-
-Copyright (c) 2014 Thomas Nilsson. See the git-rej-merge file for license rights and limitations (MIT).
+git-rej-merge is public domain, see UNLICENSE or http://unlicense.org for more information.
