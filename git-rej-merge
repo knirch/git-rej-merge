@@ -33,7 +33,7 @@ cleanup+=("$lh.diff" "$rh.diff" "$merged.rej")
 args=()
 if (($(wc -l < "$merged.rej")0 < $(wc -l < "$lh.diff")0)); then
 	args+=(-c "vsplit $merged")
-	args+=(-c "wincmd w | split $merged.rej | f Chunks\ left\ to\ merge | set buftype=nofile | set filetype=diff")
+	args+=(-c "wincmd w | split $merged.rej  | 0r !git log -1 $(< .git/MERGE_HEAD)" -c "f Chunks\ left\ to\ merge | set buftype=nofile | set filetype=diff")
 	args+=(-c "wincmd w | split $lh.diff    | f Changes\ that\ caused\ conflict | set buftype=nofile | set filetype=diff")
 	if [[ -e .git/rebase-merge ]]; then
 		args+=(-c "wincmd w | set buftype=nofile | r !git show $(< .git/rebase-merge/stopped-sha)"  -c "f 'git show $(< .git/rebase-merge/stopped-sha)'")
