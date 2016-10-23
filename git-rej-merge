@@ -14,6 +14,9 @@ lh=$2
 rh=$3
 merged=$4
 
+cleanup=()
+trap 'rm -f "${cleanup[@]}"' EXIT
+
 cat "$lh" > "$merged"
 {
 	echo '# LOCAL DIFF'
@@ -25,7 +28,9 @@ cat "$lh" > "$merged"
 } > "$rh.diff"
 
 diff -u "$ca" "$rh" | \
-	patch --force --fuzz=0 --reject-format=unified "$merged" 1>/dev/null
+	patch --version-control=never --force --fuzz=0 --reject-format=unified "$merged" 1>/dev/null
+
+cleanup+=("$lh.diff" "$rh.diff" "$merged.rej")
 
 if (($(wc -l < "$merged.rej")0 < $(wc -l < "$lh.diff")0)); then
 	vim -c "vsplit $merged" \
@@ -44,10 +49,6 @@ else
 	    -c "set filetype=diff" \
 	    -c "wincmd t"
 fi
-
-rm -f "$lh.diff"
-rm -f "$rh.diff"
-rm -f "$merged.rej"
 
 while :; do
 	read -ep "Was the merge successful? [y/n] "
