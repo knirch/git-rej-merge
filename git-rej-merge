@@ -32,22 +32,27 @@ diff -u "$ca" "$rh" | \
 
 cleanup+=("$lh.diff" "$rh.diff" "$merged.rej")
 
+args=()
 if (($(wc -l < "$merged.rej")0 < $(wc -l < "$lh.diff")0)); then
-	vim -c "vsplit $merged" \
-	    -c "wincmd w | split $merged.rej | f Chunks\ left\ to\ merge | set buftype=nofile | set filetype=diff" \
-	    -c "wincmd w | split $lh.diff    | f Changes\ that\ caused\ conflict | set buftype=nofile | set filetype=diff" \
-	    -c "wincmd w | set buftype=nofile | r !git log --merge -p $merged"  -c "f 'git log --merge -p $merged'" \
-	    -c "set filetype=git | 0" \
-	    -c "wincmd t"
+	args+=(-c "vsplit $merged")
+	args+=(-c "wincmd w | split $merged.rej | f Chunks\ left\ to\ merge | set buftype=nofile | set filetype=diff")
+	args+=(-c "wincmd w | split $lh.diff    | f Changes\ that\ caused\ conflict | set buftype=nofile | set filetype=diff")
+	args+=(-c "wincmd w | set buftype=nofile | r !git log --merge -p $merged"  -c "f 'git log --merge -p $merged'")
+	args+=(-c "set filetype=git | 0")
+	args+=(-c "wincmd t")
 else
 	cat "$lh" > "$merged"
 	patch -R --force --fuzz=0 --reject-format=unified "$merged" 1>/dev/null < "$lh.diff"
 	diff -u "$ca" "$rh" | \
 		patch --force --fuzz=0 --reject-format=unified "$merged" 1>/dev/null
-	vim -c "vsplit $merged" \
-	    -c "wincmd w"            -c "e $lh.diff" \
-	    -c "set filetype=diff" \
-	    -c "wincmd t"
+	args+=(-c "vsplit $merged")
+	args+=(-c "wincmd w" -c "e $lh.diff")
+	args+=(-c "set filetype=diff")
+	args+=(-c "wincmd t")
+fi
+
+if ! vim "${args[@]}"; then
+	exit 1
 fi
 
 while :; do
