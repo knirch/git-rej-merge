@@ -18,8 +18,8 @@ Usage
 Using git-rej-merge is as simple as adding it to your git config.
 
 ```
-$ git config mergetool.rej-merge.cmd '<path/to>/git-rej-merge $BASE $LOCAL $REMOTE $MERGED'
-$ git config merge.tool rej-merge
+$ git config --global mergetool.rej-merge.cmd '<path/to>/git-rej-merge $BASE $LOCAL $REMOTE $MERGED'
+$ git config --global merge.tool rej-merge
 ```
 
 Next time you get a conflict, just use `git mergetool` (or `git mergetool
